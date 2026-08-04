@@ -17,17 +17,19 @@ pub struct Battery {
 }
 
 impl Battery {
-    /// First battery that reports a usable draw. Not every machine calls it `BAT0`.
-    pub fn discover() -> Result<Self> {
+    /// Every battery that reports a usable draw, in name order.
+    ///
+    /// Not every machine calls it `BAT0`, and some carry two.
+    pub fn discover_all() -> Result<Vec<Self>> {
         let mut entries: Vec<PathBuf> = fs::read_dir(SUPPLY_ROOT)?
             .filter_map(Result::ok)
             .map(|e| e.path())
             .collect();
         entries.sort();
 
-        entries
+        Ok(entries
             .into_iter()
-            .find(|p| {
+            .filter(|p| {
                 // The same counters `watts` needs: accepting a battery on `current_now`
                 // alone picks one that can never be sampled, and the header then shows a
                 // backfilled reading labelled "now" forever, with nothing to say why.
@@ -42,7 +44,39 @@ impl Battery {
                     .unwrap_or_default(),
                 root,
             })
-            .ok_or_else(|| anyhow!("no battery with a readable power draw under {SUPPLY_ROOT}"))
+            .collect())
+    }
+
+    /// The battery named `wanted`, or the first available when no name is given.
+    ///
+    /// A machine with two packs charts one of them; which one is named in the header, and
+    /// the others are listed in the error when the requested name is not among them.
+    pub fn select(wanted: Option<&str>) -> Result<Self> {
+        let found = Self::discover_all()?;
+        let names = || {
+            found
+                .iter()
+                .map(|b| b.name.as_str())
+                .collect::<Vec<_>>()
+                .join(", ")
+        };
+
+        match wanted {
+            Some(name) => found
+                .iter()
+                .find(|b| b.name.eq_ignore_ascii_case(name))
+                .map(|b| Self {
+                    name: b.name.clone(),
+                    root: b.root.clone(),
+                })
+                .ok_or_else(|| match found.len() {
+                    0 => anyhow!("no battery with a readable power draw under {SUPPLY_ROOT}"),
+                    _ => anyhow!("no battery named {name}; this machine has: {}", names()),
+                }),
+            None => found.into_iter().next().ok_or_else(|| {
+                anyhow!("no battery with a readable power draw under {SUPPLY_ROOT}")
+            }),
+        }
     }
 
     pub fn state(&self) -> State {

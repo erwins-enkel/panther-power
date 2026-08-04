@@ -1,18 +1,24 @@
 //! Application state: the series, the visible range, and how they are summarised.
 
 use anyhow::Result;
+use clap::ValueEnum;
 
 use crate::battery::{Battery, now_unix};
+use crate::cli::Cli;
 use crate::history::{self, Sample};
 use crate::power::State;
 use crate::stats::Stats;
 
 /// Selectable spans of the chart's x-axis.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
 pub enum Range {
+    #[value(name = "15m")]
     M15,
+    #[value(name = "1h")]
     H1,
+    #[value(name = "3h")]
     H3,
+    #[value(name = "12h")]
     H12,
 }
 
@@ -46,6 +52,8 @@ const BACKFILL_POINTS: u32 = 20_000;
 
 pub struct App {
     pub battery: Battery,
+    /// Chart marker, chosen once so terminals without Braille support stay usable.
+    pub marker: ratatui::symbols::Marker,
     pub series: Vec<Sample>,
     pub range: Range,
     pub pack_wh: Option<f64>,
@@ -54,8 +62,8 @@ pub struct App {
 }
 
 impl App {
-    pub fn new() -> Result<Self> {
-        let battery = Battery::discover()?;
+    pub fn new(cli: &Cli) -> Result<Self> {
+        let battery = Battery::select(cli.battery.as_deref())?;
         let pack_wh = battery.pack_wh();
 
         // A failed backfill is not fatal: live sampling still works, the chart just
@@ -69,8 +77,9 @@ impl App {
 
         Ok(Self {
             battery,
+            marker: cli.marker.into(),
             series,
-            range: Range::H1,
+            range: cli.range,
             pack_wh,
             notice,
         })

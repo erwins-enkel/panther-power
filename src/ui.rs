@@ -3,7 +3,6 @@
 use ratatui::Frame;
 use ratatui::layout::{Alignment, Constraint, Layout, Rect};
 use ratatui::style::{Modifier, Style};
-use ratatui::symbols::Marker;
 use ratatui::text::{Line, Span};
 use ratatui::widgets::canvas::{Canvas, FilledLine};
 use ratatui::widgets::{Block, Paragraph};
@@ -112,11 +111,6 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App) {
         "full-pack at median",
         projection.unwrap_or_else(|| "—".to_owned()),
     ));
-    bottom.push(Span::styled(
-        sample_count(stats),
-        Style::default().fg(theme::dim()),
-    ));
-
     frame.render_widget(
         Paragraph::new(vec![Line::from(top), Line::from(bottom)]).block(block(Line::from(title))),
         area,
@@ -127,10 +121,12 @@ fn opt_watts(value: Option<f64>) -> String {
     value.map_or_else(|| "—".to_owned(), |w| format!("{w:.2} W"))
 }
 
+/// The count belongs with the chart it describes, and keeps the stat row short enough to
+/// survive a narrow terminal.
 fn sample_count(stats: Option<Stats>) -> String {
     match stats {
-        Some(s) => format!("({} discharging samples)", s.n),
-        None => "(no discharging samples in range)".to_owned(),
+        Some(s) => format!("{} discharging samples ", s.n),
+        None => "no discharging samples ".to_owned(),
     }
 }
 
@@ -138,7 +134,11 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
     let title = Line::from(vec![
         Span::raw(" watts "),
         Span::styled(
-            format!("last {} ", app.range.label()),
+            format!("last {} · ", app.range.label()),
+            Style::default().fg(theme::dim()),
+        ),
+        Span::styled(
+            sample_count(app.discharge_stats()),
             Style::default().fg(theme::dim()),
         ),
     ]);
@@ -197,7 +197,7 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
     // height.
     frame.render_widget(
         Canvas::default()
-            .marker(Marker::Braille)
+            .marker(app.marker)
             .x_bounds([0.0, span])
             .y_bounds([0.0, y_max])
             .paint(|ctx| {
