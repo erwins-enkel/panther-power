@@ -6,24 +6,24 @@ A live terminal chart of laptop power draw, in braille. `btop`'s visual language
 the one number `btop` doesn't graph: watts off the battery.
 
 ```
-┌ panther-power BAT1 charging 88% ─────────────────────────────────────────────────────┐
-│charging at 40.47 W   median 6.05 W   mean 6.42 W   p90 10.17 W                       │
-│min 2.58 W   peak 23.65 W   pack 73.5 Wh   full-pack at median 12h 09m                │
+┌ panther-power BAT1 discharging 90% ──────────────────────────────────────────────────┐
+│now 7.19 W   median 6.93 W   mean 7.65 W   p90 9.51 W                                 │
+│min 2.58 W   peak 23.65 W   pack 73.5 Wh   full-pack at median 10h 37m                │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-┌ watts last 3h · 315 discharging samples ─────────────────────────────────────────────┐
-│  25                                                            ⢀⡀                    │
-│                                                                ⣾⡇                    │
-│                                                                ⣿⡇  ⣰                 │
-│                                                                ⣿⡇  ⣿                 │
-│                                                         ⡀      ⣿⡇  ⣿ ⢰⡄              │
-│                                      ⡄                 ⢰⡇   ⡄  ⣿⡇  ⣿⡆⢸⡇              │
-│12.5         ⣤                ⡀      ⢸⣷⣤⡄⣀  ⡀ ⣴   ⣦     ⢸⣧  ⢸⡇  ⣿⡇  ⣿⡇⢸⡇              │
-│     ⡄       ⣿⡆              ⢰⡇    ⢀ ⢸⣿⣿⣿⣿⣶⣶⣷ ⣿⡆  ⣿ ⡄   ⢸⣿  ⢸⡇  ⣿⡇  ⣿⡇⢸⡇ ⢰⡇           │
-│     ⣿ ⢀⡀ ⢀⡆⢸⣿⡇              ⣸⣇⡄⢀⡀⢸⣿⡇⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣿⣴⣿⣀⣿⣀⡀ ⣿⣿⣴⣶⣸⣷⣰⣤⣿⣷⣆⣿⣿⣇⣾⣧⣠⣿⣧⣠⣿⣤        │
-│     ⣿ ⢸⣷⣴⣼⣧⣼⣿⡇            ⢰⡆⣿⣿⣧⣿⣧⣿⣿⣧⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣧⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆       │
-│     ⣿⣶⣾⣿⣿⣿⣿⣿⣿⣷⣶⣶⣶⣶⣶⣶⣶⣶⣶⣶⣶⣶⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇       │
-│   0 ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇       │
-│     -3h                                  -1h30m                                   now│
+┌ watts last 1h · 81 discharging samples ──────────────────────────────────────────────┐
+│  25  ⣀⣀                                                                              │
+│     ⢰⣿⣿                                                                              │
+│     ⢸⣿⣿         ⢀⣦                                                                   │
+│     ⢸⣿⣿         ⢸⣿⡇                                                                  │
+│     ⢸⣿⣿         ⢸⣿⡇    ⢠⣦                                                            │
+│     ⢸⣿⣿         ⢸⣿⣷    ⢸⣿                                                            │
+│12.5 ⢸⣿⣿         ⢸⣿⣿    ⢸⣿                                                            │
+│     ⢸⣿⣿⡆        ⢸⣿⣿    ⢸⣿⣷       ⢰⣷                                                  │
+│     ⢸⣿⣿⣿⣷⣤⣦⡀ ⣿⣿⣦⣸⣿⣿⣦⡀⢀⣦⣼⣿⣿⣄⣠⣀⢀⣼⣆⣀⣸⣿⣦⣄⢀⣤⣄⣿⣿⣦⣠⣤⣀                                 ⣰⣦⣸⣿⣷⣴│
+│     ⢸⣿⣿⣿⣿⣿⣿⣷⣴⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆                            ⣴⣶⣤⣾⣿⣿⣿⣿⣿⣿│
+│     ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                            ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│
+│   0 ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                            ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│
+│     -1h                                   -30m                                    now│
 └──────────────────────────────────────────────────────────────────────────────────────┘
  1 15m   2 1h   3 3h   4 12h   q quit
 ```
@@ -31,8 +31,9 @@ the one number `btop` doesn't graph: watts off the battery.
 The fill runs green at idle to red at the peak, in [Catppuccin](https://catppuccin.com).
 Colour is lost in this README; it is the point of the thing in a real terminal.
 
-That capture was taken on AC, which is why the live figure reads `charging at` and the
-chart stops short of the right edge — see [How it measures](#how-it-measures).
+That is a real capture, not a mock-up. The blank stretch in the middle is 21 minutes on
+mains: charging is not draw, so those samples are excluded rather than bridged with a
+plausible-looking line. See [How it measures](#how-it-measures).
 
 ## Install
 
