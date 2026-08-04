@@ -4,9 +4,10 @@ use anyhow::Result;
 use clap::ValueEnum;
 
 use crate::battery::{Battery, now_unix};
-use crate::cli::Cli;
+use crate::cli::{Cli, RaplMode};
 use crate::history::{self, Sample};
 use crate::power::State;
+use crate::rapl::{Rapl, Unavailable};
 use crate::stats::Stats;
 
 /// Selectable spans of the chart's x-axis.
@@ -59,6 +60,13 @@ pub struct App {
     pub pack_wh: Option<f64>,
     /// Set when backfill failed, so the empty chart is explained rather than silent.
     pub notice: Option<String>,
+    /// CPU counters, when they are readable and wanted.
+    pub rapl: Option<Rapl>,
+    /// Why there is no CPU panel, when there is not one.
+    pub rapl_missing: Option<Unavailable>,
+    /// Package power observed since launch. RAPL keeps no history, so unlike the battery
+    /// series this one cannot be backfilled — it starts empty and fills as you watch.
+    pub cpu_series: Vec<Sample>,
     /// The clock, read once per tick rather than per call.
     ///
     /// Every read during a frame has to agree: a second turning over between the window
@@ -81,9 +89,24 @@ impl App {
                 Err(e) => (Vec::new(), Some(format!("no history from UPower: {e}"))),
             };
 
+        let (rapl, rapl_missing) = match cli.rapl {
+            RaplMode::Off => (None, None),
+            _ => match Rapl::discover() {
+                Ok(rapl) => (Some(rapl), None),
+                // `--rapl on` is a request to be told, rather than quietly given less.
+                Err(e) if cli.rapl == RaplMode::On => {
+                    anyhow::bail!("{}", e.reason())
+                }
+                Err(e) => (None, Some(e)),
+            },
+        };
+
         Ok(Self {
             battery,
             marker: cli.marker.into(),
+            rapl,
+            rapl_missing,
+            cpu_series: Vec::new(),
             series,
             range: cli.range,
             pack_wh,
@@ -99,6 +122,9 @@ impl App {
         Self {
             battery: Battery::at("BAT0", "/nonexistent"),
             marker: ratatui::symbols::Marker::Braille,
+            rapl: None,
+            rapl_missing: None,
+            cpu_series: Vec::new(),
             series,
             range,
             pack_wh: Some(73.5),
@@ -113,6 +139,26 @@ impl App {
         if let Some(sample) = self.battery.sample() {
             history::push(&mut self.series, sample, RETAIN_SECS);
         }
+        if let Some(rapl) = &mut self.rapl {
+            rapl.sample();
+            if let Some(watts) = rapl.primary().and_then(|d| d.watts) {
+                history::push(
+                    &mut self.cpu_series,
+                    Sample {
+                        ts: self.now,
+                        watts,
+                        // Direction is a battery notion; it means nothing for a CPU zone.
+                        state: State::Unknown,
+                    },
+                    RETAIN_SECS,
+                );
+            }
+        }
+    }
+
+    /// Package power within the visible window.
+    pub fn visible_cpu(&self) -> &[Sample] {
+        history::window(&self.cpu_series, self.window_start())
     }
 
     /// Unix second at the left edge of the chart.

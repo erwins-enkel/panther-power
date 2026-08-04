@@ -80,6 +80,7 @@ panther-power --list-batteries      # what this machine exposes
 | `--theme <latte\|frappe\|macchiato\|mocha>` | `mocha` | Catppuccin flavour |
 | `--marker <braille\|half-block\|block\|dot>` | `braille` | Braille needs a font with the Braille Patterns block |
 | `--color <auto\|truecolor\|ansi>` | `auto` | `auto` reads `COLORTERM`; `ansi` follows your terminal's own palette |
+| `--rapl <auto\|on\|off>` | `auto` | CPU panel. `on` refuses to start if the counters are unreadable, and says why |
 
 ## Development
 
@@ -126,7 +127,65 @@ benchmark figure and deliberately ignores the current charge level — at 50% yo
 have that long left.
 
 Battery draw is whole-system: SoC, display, radios, everything. It is not CPU package
-power, and the two should not be read as the same number.
+power, and the two should not be read as the same number — which is why the CPU panel is
+a separate chart with its own scale rather than a second line on the same axes. The two
+share a time axis and a left gutter, so a spike lines up against a spike.
+
+**CPU power** comes from the RAPL energy counters, which are accumulators rather than
+power readings: watts are the difference between two samples over the time between them.
+The counter wraps, and also resets across suspend — a reset is indistinguishable from a
+wrap, so intervals longer than ten seconds are discarded rather than turned into an
+invented spike. RAPL keeps no history, so unlike the battery chart this one starts empty
+and fills as you watch.
+
+## CPU power is off unless you allow it
+
+`/sys/class/powercap/*/energy_uj` is root-only, and that is deliberate. Fine-grained power
+readings are a side channel: [PLATYPUS](https://platypusattack.com) (CVE-2020-8694) used
+unprivileged RAPL access to recover AES-NI keys and defeat KASLR, and the kernel locked
+the counters down in response.
+
+So this is a trade, and it is yours to make rather than mine to make quietly. `panther-power`
+reads the counters if it can and says nothing if it cannot. When it can, a second panel
+appears below the battery chart:
+
+```
+┌ cpu package-0 · core 0.69 W · uncore 0.05 W · dram 0.42 W · platform psys 11.51 W ───────┐
+│ 2.5                                                                                     ⣆│
+│                                                                                         ⣿│
+│1.25                                                                                     ⣿│
+│                                                                                         ⣿│
+│   0                                                                                     ⣿│
+│     -15m                                     -7m                                      now│
+└──────────────────────────────────────────────────────────────────────────────────────────┘
+ 1 15m   2 1h   3 3h   4 12h   q quit
+```
+
+`psys` is named apart from the zones beside it because it measures the whole platform, not
+the CPU — on this hardware it reads roughly double the package, and summing it with
+`core`/`uncore`/`dram` would be meaningless.
+
+For the current boot only:
+
+```sh
+sudo chmod a+r /sys/class/powercap/intel-rapl:*/energy_uj
+```
+
+To make it stick, a udev rule granting a group you belong to:
+
+```sh
+echo 'SUBSYSTEM=="powercap", ACTION=="add", RUN+="/bin/chmod g+r /sys%p/energy_uj", RUN+="/bin/chgrp power /sys%p/energy_uj"' \
+  | sudo tee /etc/udev/rules.d/99-powercap.rules
+```
+
+Either way you are re-opening the side channel to every local process that can read those
+files, so weigh it against what else runs on the machine. `--rapl on` refuses to start and
+tells you why, if you would rather find out than wonder.
+
+A capability on the binary (`setcap cap_dac_read_search+ep`) is the other route often
+suggested, and it is worth knowing what it costs: that capability bypasses read permission
+checks on *every* file on the system, not just these. Loosening the two counters is the
+narrower blast radius.
 
 ## Known limitations
 
@@ -137,7 +196,6 @@ power, and the two should not be read as the same number.
 - A sharp step between widely-spaced samples fills the earlier sample's column too tall,
   because band edges are pinned to sample positions rather than interpolated. Invisible at
   1 s live cadence; visible with 30 s backfill in the 15 m range.
-- No CPU package breakdown. `intel-rapl` energy counters are root-only.
 
 ## Licence
 

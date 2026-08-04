@@ -8,9 +8,10 @@ use ratatui::widgets::canvas::{Canvas, FilledLine};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::{App, Range};
-use crate::chart::{band_runs, fmt_ago, fmt_hm, nice_ceil};
+use crate::chart::{band_runs, fmt_ago, fmt_hm, fmt_watts, nice_ceil};
 use crate::history::{GAP_SECS, Sample, segments};
 use crate::power::State;
+use crate::rapl::Unavailable;
 use crate::stats::{Stats, runtime_hours};
 use crate::theme;
 
@@ -26,7 +27,24 @@ pub fn draw(frame: &mut Frame, app: &App) {
     .areas(frame.area());
 
     draw_header(frame, header, app);
-    draw_chart(frame, body, app);
+
+    let battery = app.visible_discharging();
+    let cpu = app.visible_cpu();
+
+    // One gutter width for both panels: different y-ceilings would otherwise indent the
+    // two time axes differently, and the whole point of stacking them is to line up a
+    // spike in draw against a spike in the CPU.
+    let gutter = gutter_width(&[y_ceiling(&battery), y_ceiling(cpu)]);
+
+    if cpu.is_empty() {
+        draw_chart(frame, body, app, &battery, battery_title(app), gutter, true);
+    } else {
+        let [top, bottom] =
+            Layout::vertical([Constraint::Percentage(60), Constraint::Percentage(40)]).areas(body);
+        draw_chart(frame, top, app, &battery, battery_title(app), gutter, true);
+        draw_chart(frame, bottom, app, cpu, cpu_title(app), gutter, false);
+    }
+
     draw_footer(frame, footer, app);
 }
 
@@ -130,9 +148,9 @@ fn sample_count(stats: Option<Stats>) -> String {
     }
 }
 
-fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
-    let title = Line::from(vec![
-        Span::raw(" watts "),
+fn battery_title(app: &App) -> Line<'static> {
+    Line::from(vec![
+        Span::raw(" battery draw "),
         Span::styled(
             format!("last {} · ", app.range.label()),
             Style::default().fg(theme::dim()),
@@ -141,15 +159,78 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
             sample_count(app.discharge_stats()),
             Style::default().fg(theme::dim()),
         ),
-    ]);
+    ])
+}
+
+/// Names the zone and breaks out the others, so the number is not mistaken for the
+/// machine's draw — it is the CPU package alone.
+fn cpu_title(app: &App) -> Line<'static> {
+    let Some(rapl) = &app.rapl else {
+        return Line::from(" cpu ");
+    };
+    let zone = rapl.primary().map_or("cpu", |d| d.name.as_str());
+    let mut spans = vec![Span::raw(format!(" cpu {zone} "))];
+
+    let breakdown: Vec<String> = rapl
+        .subzones()
+        .filter_map(|d| d.watts.map(|w| format!("{} {w:.2} W", d.name)))
+        .collect();
+    if !breakdown.is_empty() {
+        spans.push(Span::styled(
+            format!("· {} ", breakdown.join(" · ")),
+            Style::default().fg(theme::dim()),
+        ));
+    }
+
+    // Named apart from the zones above: `psys` measures the whole platform, so summing it
+    // with them, or reading it as a CPU figure, would be wrong.
+    let platform: Vec<String> = rapl
+        .platform()
+        .filter_map(|d| d.watts.map(|w| format!("{} {w:.2} W", d.name)))
+        .collect();
+    if !platform.is_empty() {
+        spans.push(Span::styled(
+            format!("· platform {} ", platform.join(" · ")),
+            Style::default().fg(theme::dim()),
+        ));
+    }
+    Line::from(spans)
+}
+
+/// Y-axis ceiling for a series, or `None` when there is nothing to scale to.
+fn y_ceiling(samples: &[Sample]) -> Option<f64> {
+    (!samples.is_empty()).then(|| nice_ceil(samples.iter().fold(0.0_f64, |m, s| m.max(s.watts))))
+}
+
+fn gutter_width(ceilings: &[Option<f64>]) -> u16 {
+    ceilings
+        .iter()
+        .flatten()
+        .flat_map(|c| y_labels(*c))
+        .map(|l| l.width())
+        .max()
+        .unwrap_or(1) as u16
+        + 1
+}
+
+fn draw_chart(
+    frame: &mut Frame,
+    area: Rect,
+    app: &App,
+    visible: &[Sample],
+    title: Line<'_>,
+    gutter: u16,
+    is_battery: bool,
+) {
     // Read the clock once, before the window is taken: a second ticking over between the
     // two would put `t0` after the cutoff the samples were filtered on, and the oldest
     // reading would saturate to x = 0 and be drawn on the left edge.
     let t0 = app.window_start();
-    let visible = app.visible_discharging();
 
     if visible.is_empty() {
-        let message = if app.on_ac() {
+        let message = if !is_battery {
+            "waiting for a second reading".to_owned()
+        } else if app.on_ac() {
             "on AC — charting resumes on battery".to_owned()
         } else {
             app.notice
@@ -166,16 +247,15 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
         return;
     }
 
-    let y_max = nice_ceil(visible.iter().fold(0.0_f64, |m, s| m.max(s.watts)));
+    let y_max = y_ceiling(visible).unwrap_or(1.0);
     let span = app.range.secs() as f64;
-    let runs = band_data(&visible, y_max, t0);
+    let runs = band_data(visible, y_max, t0);
 
     let outer = block(title);
     let inner = outer.inner(area);
     frame.render_widget(outer, area);
 
     let labels = y_labels(y_max);
-    let gutter = labels.iter().map(Line::width).max().unwrap_or(0) as u16 + 1;
     let [plot_row, x_axis_row] =
         Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).areas(inner);
     let columns = Layout::horizontal([Constraint::Length(gutter), Constraint::Min(1)]);
@@ -321,15 +401,7 @@ fn band_data(visible: &[Sample], y_max: f64, t0: u64) -> Vec<(usize, Vec<(f64, f
 
 fn y_labels(y_max: f64) -> Vec<Line<'static>> {
     (0..=2)
-        .map(|i| {
-            let w = y_max * f64::from(i) / 2.0;
-            // A 25 W ceiling has a 12.5 W midpoint; rounding it to "12" mislabels the axis.
-            Line::from(if w.fract() == 0.0 {
-                format!("{w:.0}")
-            } else {
-                format!("{w:.1}")
-            })
-        })
+        .map(|i| Line::from(fmt_watts(y_max * f64::from(i) / 2.0)))
         .collect()
 }
 
@@ -359,6 +431,15 @@ fn draw_footer(frame: &mut Frame, area: Rect, app: &App) {
     if let Some(notice) = &app.notice {
         spans.push(Span::styled(
             format!("   {notice}"),
+            Style::default().fg(theme::dim()),
+        ));
+    }
+
+    // Only when there is something the reader could do about it. A machine with no RAPL
+    // counters at all cannot be fixed by telling them about it every frame.
+    if app.rapl_missing == Some(Unavailable::PermissionDenied) {
+        spans.push(Span::styled(
+            format!("   {}", Unavailable::PermissionDenied.reason()),
             Style::default().fg(theme::dim()),
         ));
     }

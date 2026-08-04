@@ -6,6 +6,7 @@ mod chart;
 mod cli;
 mod history;
 mod power;
+mod rapl;
 mod stats;
 mod theme;
 mod ui;

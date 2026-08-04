@@ -40,6 +40,10 @@ pub struct Cli {
     /// Colour depth. `auto` looks at COLORTERM
     #[arg(long, value_enum, default_value_t = ColorMode::Auto)]
     pub color: ColorMode,
+
+    /// CPU package power panel, read from the RAPL counters
+    #[arg(long, value_enum, default_value_t = RaplMode::Auto)]
+    pub rapl: RaplMode,
 }
 
 impl Cli {
@@ -85,6 +89,16 @@ impl From<MarkerKind> for ratatui::symbols::Marker {
             MarkerKind::Dot => Self::Dot,
         }
     }
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]
+pub enum RaplMode {
+    /// Show the panel when the counters are readable, and stay quiet when they are not
+    Auto,
+    /// Require the panel, and refuse to start if the counters cannot be read
+    On,
+    /// Never show it
+    Off,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, ValueEnum)]

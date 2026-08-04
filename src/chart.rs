@@ -59,6 +59,15 @@ pub fn nice_ceil(x: f64) -> f64 {
     step * magnitude
 }
 
+/// A watt figure for an axis label: enough precision to be true, no more.
+///
+/// A 2.5 W ceiling has a 1.25 W midpoint, and printing that as `1.2` mislabels the axis.
+pub fn fmt_watts(w: f64) -> String {
+    let s = format!("{w:.2}");
+    let s = s.trim_end_matches('0').trim_end_matches('.');
+    s.to_owned()
+}
+
 /// Hours as `13h 19m`.
 pub fn fmt_hm(hours: f64) -> String {
     let total_minutes = (hours * 60.0).round() as u64;
@@ -88,6 +97,14 @@ mod tests {
         assert_eq!(nice_ceil(2.1), 2.5);
         assert_eq!(nice_ceil(0.9), 1.0);
         assert_eq!(nice_ceil(0.0), 1.0, "an empty chart still needs an axis");
+    }
+
+    #[test]
+    fn formats_axis_labels_without_lying_about_precision() {
+        assert_eq!(fmt_watts(10.0), "10");
+        assert_eq!(fmt_watts(12.5), "12.5");
+        assert_eq!(fmt_watts(1.25), "1.25");
+        assert_eq!(fmt_watts(0.0), "0");
     }
 
     #[test]
