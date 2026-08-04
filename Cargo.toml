@@ -10,6 +10,9 @@ license = "MIT"
 repository = "https://github.com/erwins-enkel/panther-power"
 keywords = ["tui", "battery", "power", "ratatui", "monitoring"]
 categories = ["command-line-utilities"]
+# The demo GIF is most of the tarball, and the dev tooling is no use to a consumer. The
+# README points at them in the repository instead.
+exclude = ["docs/", ".github/", "justfile", ".gitignore"]
 
 [dependencies]
 anyhow = "1.0.104"

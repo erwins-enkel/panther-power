@@ -5,7 +5,7 @@
 A live terminal chart of laptop power draw, in braille. `btop`'s visual language, but for
 the one number `btop` doesn't graph: watts off the battery.
 
-![panther-power](docs/demo.gif)
+![panther-power](https://github.com/erwins-enkel/panther-power/raw/main/docs/demo.gif)
 
 That is a real recording, not a mock-up. The blank stretch mid-chart is 21 minutes on
 mains: charging is not draw, so those samples are excluded rather than bridged with a
