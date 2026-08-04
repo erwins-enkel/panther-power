@@ -1,13 +1,13 @@
 [package]
-name = "panther-power"
-version = "0.2.0"
+name = "wattmeter"
+version = "0.3.0"
 edition = "2024"
 # Floor set by ratatui 1.88 and by let-chains, which this crate uses. Verified in CI
 # rather than asserted — see the `msrv` recipe.
 rust-version = "1.88"
 description = "Live terminal chart of laptop power draw, in braille"
 license = "MIT"
-repository = "https://github.com/erwins-enkel/panther-power"
+repository = "https://github.com/erwins-enkel/wattmeter"
 keywords = ["tui", "battery", "power", "ratatui", "monitoring"]
 categories = ["command-line-utilities"]
 # The demo GIF is most of the tarball, and the dev tooling is no use to a consumer. The

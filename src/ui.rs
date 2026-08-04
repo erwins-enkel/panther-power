@@ -72,7 +72,7 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App) {
     };
 
     let mut title = vec![
-        Span::styled(" panther-power ", Style::default().fg(theme::accent())),
+        Span::styled(" wattmeter ", Style::default().fg(theme::accent())),
         Span::styled(&app.battery.name, Style::default().fg(theme::text())),
         Span::raw(" "),
         Span::styled(state_label, Style::default().fg(state_color)),

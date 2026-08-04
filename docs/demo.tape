@@ -13,7 +13,7 @@ Set Theme "Catppuccin Mocha"
 # vhs does not advertise COLORTERM, so ask for 24-bit explicitly rather than letting
 # auto-detection fall back to named colours and flatten the gradient.
 Hide
-Type "./target/release/panther-power --color truecolor --range 1h"
+Type "./target/release/wattmeter --color truecolor --range 1h"
 Enter
 Sleep 4s
 Show

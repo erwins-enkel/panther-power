@@ -1144,19 +1144,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "panther-power"
-version = "0.2.0"
-dependencies = [
- "anyhow",
- "catppuccin",
- "clap",
- "crossterm",
- "ratatui",
- "serde_json",
- "zbus",
-]
-
-[[package]]
 name = "parking"
 version = "2.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2106,6 +2093,19 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc1b4cb0cc549fcf58d7dfc081778139b3d283a081644e833e84682ad71cea24"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wattmeter"
+version = "0.3.0"
+dependencies = [
+ "anyhow",
+ "catppuccin",
+ "clap",
+ "crossterm",
+ "ratatui",
+ "serde_json",
+ "zbus",
 ]
 
 [[package]]

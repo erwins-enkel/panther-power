@@ -43,7 +43,7 @@ build:
 
 # Build and launch
 run: build
-    ./target/release/panther-power
+    ./target/release/wattmeter
 
 # Install this working copy to ~/.cargo/bin (which may not be on your PATH)
 install:
@@ -51,7 +51,7 @@ install:
 
 # Remove it again
 uninstall:
-    cargo uninstall panther-power
+    cargo uninstall wattmeter
 
 # Recording needs vhs and ttyd, plus a battery with some discharge history: on a machine
 # that has been on mains all day the chart has nothing to draw.

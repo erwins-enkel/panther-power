@@ -152,7 +152,7 @@ mod tests {
 
     #[test]
     fn poll_never_reaches_zero() {
-        let cli = Cli::parse_from(["panther-power", "--interval", "0"]);
+        let cli = Cli::parse_from(["wattmeter", "--interval", "0"]);
         assert_eq!(cli.poll(), Duration::from_millis(100));
     }
 

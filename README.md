@@ -1,38 +1,39 @@
-# panther-power
+# wattmeter
 
-[![CI](https://github.com/erwins-enkel/panther-power/actions/workflows/ci.yml/badge.svg)](https://github.com/erwins-enkel/panther-power/actions/workflows/ci.yml)
+[![CI](https://github.com/erwins-enkel/wattmeter/actions/workflows/ci.yml/badge.svg)](https://github.com/erwins-enkel/wattmeter/actions/workflows/ci.yml)
 
 A live terminal chart of laptop power draw, in braille. `btop`'s visual language, but for
 the one number `btop` doesn't graph: watts off the battery.
 
-![panther-power](https://github.com/erwins-enkel/panther-power/raw/main/docs/demo.gif)
+![wattmeter](https://github.com/erwins-enkel/wattmeter/raw/main/docs/demo.gif)
 
-That is a real recording, not a mock-up. The blank stretch mid-chart is 21 minutes on
-mains: charging is not draw, so those samples are excluded rather than bridged with a
-plausible-looking line. See [How it measures](#how-it-measures).
+That is a real recording, not a mock-up. It was taken on mains, which is why the live
+figure reads `charging at` and the chart stops short of the right edge — charging is not
+draw, so those samples are excluded rather than bridged with a plausible-looking line.
+See [How it measures](#how-it-measures).
 
 <details>
 <summary>Same thing as text, for reading in a terminal</summary>
 
 ```
-┌ panther-power BAT1 discharging 90% ──────────────────────────────────────────────────┐
-│now 7.19 W   median 6.93 W   mean 7.65 W   p90 9.51 W                                 │
-│min 2.58 W   peak 23.65 W   pack 73.5 Wh   full-pack at median 10h 37m                │
+┌ wattmeter BAT1 charging 95% ─────────────────────────────────────────────────────────┐
+│charging at 23.42 W   median 6.16 W   mean 6.09 W   p90 6.83 W   used 4.31 Wh over 42m│
+│min 5.04 W   peak 8.18 W   pack 73.5 Wh   full-pack at median 11h 56m                 │
 └──────────────────────────────────────────────────────────────────────────────────────┘
-┌ watts last 1h · 81 discharging samples ──────────────────────────────────────────────┐
-│  25  ⣀⣀                                                                              │
-│     ⢰⣿⣿                                                                              │
-│     ⢸⣿⣿         ⢀⣦                                                                   │
-│     ⢸⣿⣿         ⢸⣿⡇                                                                  │
-│     ⢸⣿⣿         ⢸⣿⡇    ⢠⣦                                                            │
-│     ⢸⣿⣿         ⢸⣿⣷    ⢸⣿                                                            │
-│12.5 ⢸⣿⣿         ⢸⣿⣿    ⢸⣿                                                            │
-│     ⢸⣿⣿⡆        ⢸⣿⣿    ⢸⣿⣷       ⢰⣷                                                  │
-│     ⢸⣿⣿⣿⣷⣤⣦⡀ ⣿⣿⣦⣸⣿⣿⣦⡀⢀⣦⣼⣿⣿⣄⣠⣀⢀⣼⣆⣀⣸⣿⣦⣄⢀⣤⣄⣿⣿⣦⣠⣤⣀                                 ⣰⣦⣸⣿⣷⣴│
-│     ⢸⣿⣿⣿⣿⣿⣿⣷⣴⣿⣿⣿⣿⣿⣿⣿⣷⣾⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡆                            ⣴⣶⣤⣾⣿⣿⣿⣿⣿⣿│
-│     ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                            ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│
-│   0 ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                            ⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿│
-│     -1h                                   -30m                                    now│
+┌ battery draw last 1h · 85 discharging samples ───────────────────────────────────────┐
+│10                                                                                    │
+│                                                                                      │
+│                     ⢀                    ⢰⣶⡆                                         │
+│   ⢸⡄        ⢸⣿⡇    ⢸⣿⣷⣄⣠⣄              ⢀⡀⢸⣿⡇ ⣀⣄                                      │
+│   ⢸⣷⣤⣶⣧⣶⣤⣤⣤⣴⣿⣿⣇  ⢠⣶⣼⣿⣿⣿⣿⣿ ⢀    ⢀⣤⣴⣾⣷⡄ ⣤⣾⣿⣼⣿⣷⣶⣿⣿⣶⣦⣤⣾⣦⢠⡀      ⢀⡄                       │
+│   ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣶⣿⣿⣿⣿⣿⣿⣿⣿⣿⣾⣿⣦⣤⣴⣿⣿⣿⣿⣿⣷⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣷⣤⣄⣀⣾⣆⣰⣿⡇                       │
+│ 5 ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│   ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│   ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│   ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│   ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│ 0 ⢸⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡇                       │
+│   -1h                                    -30m                                     now│
 └──────────────────────────────────────────────────────────────────────────────────────┘
  1 15m   2 1h   3 3h   4 12h   q quit
 ```
@@ -49,31 +50,31 @@ Linux only — it reads `/sys/class/power_supply` and talks to UPower over D-Bus
 Needs Rust 1.88 or newer, which CI compiles against on every push.
 
 Prebuilt x86-64 and aarch64 binaries are attached to each
-[release](https://github.com/erwins-enkel/panther-power/releases), with checksums. Or
+[release](https://github.com/erwins-enkel/wattmeter/releases), with checksums. Or
 build it yourself:
 
 ```sh
-cargo install --git https://github.com/erwins-enkel/panther-power
+cargo install --git https://github.com/erwins-enkel/wattmeter
 ```
 
 That drops the binary in `~/.cargo/bin`, which is on your `PATH` if you installed Rust
 through rustup — but not if you installed it from a distro package. Check with
-`command -v panther-power`, and add it yourself if it comes back empty.
+`command -v wattmeter`, and add it yourself if it comes back empty.
 
 Or from a clone:
 
 ```sh
-cargo build --release && ./target/release/panther-power
+cargo build --release && ./target/release/wattmeter
 ```
 
 ## Use
 
 ```
-panther-power                       # first battery, last hour
-panther-power --range 12h           # start wider
-panther-power --battery BAT0        # pick a pack
-panther-power --list-batteries      # what this machine exposes
-panther-power --json                # one snapshot for a status bar, then exit
+wattmeter                       # first battery, last hour
+wattmeter --range 12h           # start wider
+wattmeter --battery BAT0        # pick a pack
+wattmeter --list-batteries      # what this machine exposes
+wattmeter --json                # one snapshot for a status bar, then exit
 ```
 
 `--json` prints the live reading, the window statistics, energy drawn and how much of the
@@ -162,18 +163,18 @@ readings are a side channel: [PLATYPUS](https://platypusattack.com) (CVE-2020-86
 unprivileged RAPL access to recover AES-NI keys and defeat KASLR, and the kernel locked
 the counters down in response.
 
-So this is a trade, and it is yours to make rather than mine to make quietly. `panther-power`
+So this is a trade, and it is yours to make rather than mine to make quietly. `wattmeter`
 reads the counters if it can and says nothing if it cannot. When it can, a second panel
 appears below the battery chart:
 
 ```
-┌ cpu package-0 · core 0.69 W · uncore 0.05 W · dram 0.42 W · platform psys 11.51 W ───────┐
-│ 2.5                                                                                     ⣆│
-│                                                                                         ⣿│
-│1.25                                                                                     ⣿│
-│                                                                                         ⣿│
-│   0                                                                                     ⣿│
-│     -15m                                     -7m                                      now│
+┌ cpu package-0 · core 4.78 W · uncore 1.31 W · dram 0.83 W · platform psys 26.30 W ───────┐
+│10                                                                                       ⢠│
+│                                                                                         ⢸│
+│ 5                                                                                       ⢸│
+│                                                                                         ⢸│
+│ 0                                                                                       ⢸│
+│   -1h                                      -30m                                       now│
 └──────────────────────────────────────────────────────────────────────────────────────────┘
  1 15m   2 1h   3 3h   4 12h   q quit
 ```

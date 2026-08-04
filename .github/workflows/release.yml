@@ -44,9 +44,9 @@ jobs:
       - name: Package
         run: |
           version="${{ inputs.tag || github.ref_name }}"
-          dir="panther-power-${version}-${{ matrix.target }}"
+          dir="wattmeter-${version}-${{ matrix.target }}"
           mkdir "$dir"
-          cp "target/${{ matrix.target }}/release/panther-power" README.md LICENSE "$dir/"
+          cp "target/${{ matrix.target }}/release/wattmeter" README.md LICENSE "$dir/"
           tar czf "${dir}.tar.gz" "$dir"
           sha256sum "${dir}.tar.gz" > "${dir}.tar.gz.sha256"
 
