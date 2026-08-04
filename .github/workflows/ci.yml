@@ -19,14 +19,19 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
+      # Prebuilt binary rather than `cargo install just`, which would compile it here.
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
       # Each gate is a separate step so a failure is obvious in the UI, but the commands
-      # themselves live in the Makefile — `make ci` locally runs exactly this list.
-      - run: make fmt-check
+      # themselves live in the justfile — `just ci` locally runs exactly this list.
+      - run: just fmt-check
 
-      - run: make lint
+      - run: just lint
 
-      - run: make test
+      - run: just test
 
       # The sysfs and D-Bus paths cannot run on a CI box with no battery, so this only
       # proves it builds for release, not that it works.
-      - run: make build
+      - run: just build

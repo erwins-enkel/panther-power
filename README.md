@@ -79,13 +79,16 @@ panther-power --list-batteries      # what this machine exposes
 
 ## Development
 
+Needs [just](https://github.com/casey/just).
+
 ```sh
-make ci      # fmt, clippy (warnings are errors), tests, release build — what CI runs
-make run     # build and launch
-make demo    # re-record docs/demo.gif, needs vhs and ttyd
+just         # list recipes
+just ci      # fmt, clippy (warnings are errors), tests, release build — what CI runs
+just run     # build and launch
+just demo    # re-record docs/demo.gif, needs vhs and ttyd
 ```
 
-CI invokes the same Makefile targets, so a green `make ci` locally means a green pipeline.
+CI invokes the same recipes, so a green `just ci` locally means a green pipeline.
 
 ## How it measures
 
