@@ -48,6 +48,10 @@ Recorded with [vhs](https://github.com/charmbracelet/vhs): `vhs docs/demo.tape`.
 Linux only — it reads `/sys/class/power_supply` and talks to UPower over D-Bus.
 Needs Rust 1.88 or newer, which CI compiles against on every push.
 
+Prebuilt x86-64 and aarch64 binaries are attached to each
+[release](https://github.com/erwins-enkel/panther-power/releases), with checksums. Or
+build it yourself:
+
 ```sh
 cargo install --git https://github.com/erwins-enkel/panther-power
 ```
@@ -69,7 +73,12 @@ panther-power                       # first battery, last hour
 panther-power --range 12h           # start wider
 panther-power --battery BAT0        # pick a pack
 panther-power --list-batteries      # what this machine exposes
+panther-power --json                # one snapshot for a status bar, then exit
 ```
+
+`--json` prints the live reading, the window statistics, energy drawn and how much of the
+window that energy actually covers. `draw_watts` and `charge_watts` are separate keys and
+only one is ever non-null, so a consumer cannot mistake a charge rate for a draw.
 
 `1` `2` `3` `4` switch between 15m / 1h / 3h / 12h. `q`, `Esc` or `ctrl-c` quits.
 
@@ -82,6 +91,7 @@ panther-power --list-batteries      # what this machine exposes
 | `--marker <braille\|half-block\|block\|dot>` | `braille` | Braille needs a font with the Braille Patterns block |
 | `--color <auto\|truecolor\|ansi>` | `auto` | `auto` reads `COLORTERM`; `ansi` follows your terminal's own palette |
 | `--rapl <auto\|on\|off>` | `auto` | CPU panel. `on` refuses to start if the counters are unreadable, and says why |
+| `--json` | off | One snapshot to stdout, then exit. Waits one interval when the CPU panel is on |
 
 ## Development
 
@@ -123,6 +133,11 @@ side of it.
 **Charging is not draw.** On AC the same counters measure energy going *into* the pack.
 Those samples are excluded from the chart and every statistic, and the live figure
 relabels itself `charging at`. Time on AC shows up as the gap it is.
+
+**`used`** integrates power over time within each gap-free stretch, trapezoidally, and
+reports how many seconds of real sampling are behind the figure. Gaps contribute nothing:
+an hour-wide window holding twenty minutes on mains has forty minutes of evidence in it,
+and bridging the gap would manufacture energy nobody drew.
 
 **`full-pack at median`** is what a full pack would give you at the median draw. It is a
 benchmark figure and deliberately ignores the current charge level — at 50% you do not
