@@ -74,13 +74,20 @@ pub fn fmt_hm(hours: f64) -> String {
     format!("{}h {:02}m", total_minutes / 60, total_minutes % 60)
 }
 
+/// A span of seconds as `38m` or `1h30m`.
+pub fn fmt_span(secs: u64) -> String {
+    match secs {
+        s if s < 3600 => format!("{}m", s / 60),
+        s if s % 3600 == 0 => format!("{}h", s / 3600),
+        s => format!("{}h{:02}m", s / 3600, (s % 3600) / 60),
+    }
+}
+
 /// Seconds before now, as an x-axis tick.
 pub fn fmt_ago(secs: u64) -> String {
     match secs {
         0 => "now".to_owned(),
-        s if s < 3600 => format!("-{}m", s / 60),
-        s if s % 3600 == 0 => format!("-{}h", s / 3600),
-        s => format!("-{}h{:02}m", s / 3600, (s % 3600) / 60),
+        s => format!("-{}", fmt_span(s)),
     }
 }
 
@@ -111,6 +118,14 @@ mod tests {
     fn formats_projected_runtime() {
         // The 2026-08-04 reference session: 73.5 Wh pack at a 5.52 W median.
         assert_eq!(fmt_hm(73.5 / 5.52), "13h 19m");
+    }
+
+    #[test]
+    fn formats_a_span() {
+        assert_eq!(fmt_span(0), "0m");
+        assert_eq!(fmt_span(2303), "38m");
+        assert_eq!(fmt_span(3600), "1h");
+        assert_eq!(fmt_span(5400), "1h30m");
     }
 
     #[test]

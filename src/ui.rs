@@ -8,7 +8,7 @@ use ratatui::widgets::canvas::{Canvas, FilledLine};
 use ratatui::widgets::{Block, Paragraph};
 
 use crate::app::{App, Range};
-use crate::chart::{band_runs, fmt_ago, fmt_hm, fmt_watts, nice_ceil};
+use crate::chart::{band_runs, fmt_ago, fmt_hm, fmt_span, fmt_watts, nice_ceil};
 use crate::history::{GAP_SECS, Sample, segments};
 use crate::power::State;
 use crate::rapl::Unavailable;
@@ -65,12 +65,7 @@ fn stat<'a>(label: &'a str, value: String) -> Vec<Span<'a>> {
 
 fn draw_header(frame: &mut Frame, area: Rect, app: &App) {
     let state = app.latest().map_or(State::Unknown, |s| s.state);
-    let state_label = match state {
-        State::Charging => "charging",
-        State::Discharging => "discharging",
-        State::Full => "full",
-        State::Unknown => "unknown",
-    };
+    let state_label = state.as_str();
     let state_color = match state {
         State::Charging | State::Full => theme::charging(),
         _ => theme::dim(),
@@ -106,6 +101,18 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App) {
     top.extend(stat("median", opt_watts(stats.map(|s| s.median))));
     top.extend(stat("mean", opt_watts(stats.map(|s| s.mean))));
     top.extend(stat("p90", opt_watts(stats.map(|s| s.p90))));
+
+    // Energy sits on the window row, not the pack row: it is an observation of what
+    // happened, and the coverage is stated because gaps contribute nothing to it.
+    let energy = app.window_energy();
+    top.extend(stat(
+        "used",
+        if energy.covered_secs == 0 {
+            "—".to_owned()
+        } else {
+            format!("{:.2} Wh over {}", energy.wh, fmt_span(energy.covered_secs))
+        },
+    ));
 
     let mut bottom = stat("min", opt_watts(stats.map(|s| s.min)));
     bottom.extend(stat("peak", opt_watts(stats.map(|s| s.max))));

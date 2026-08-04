@@ -1,5 +1,7 @@
 //! Summary statistics over a window of watt readings.
 
+use crate::history::{Sample, segments};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Stats {
     pub n: usize,
@@ -68,5 +70,96 @@ mod tests {
     #[test]
     fn has_no_stats_for_an_empty_window() {
         assert_eq!(Stats::of(&[]), None);
+    }
+}
+
+/// Energy observed in a window, and how much of that window it actually covers.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Energy {
+    pub wh: f64,
+    /// Seconds of real sampling behind the figure.
+    ///
+    /// Reported alongside the total because they are rarely the same: an hour-wide window
+    /// containing twenty minutes on mains has forty minutes of evidence in it, and
+    /// presenting the total as "energy used in the last hour" would overstate the coverage.
+    pub covered_secs: u64,
+}
+
+/// Integrate power over time, within each gap-free segment.
+///
+/// Trapezoidal, so a ramp between two readings counts as a ramp rather than a step. Gaps
+/// contribute nothing at all: there is no evidence for what happened across them, and
+/// bridging one would manufacture energy that was never observed.
+pub fn energy(samples: &[Sample], gap_secs: u64) -> Energy {
+    let mut wh = 0.0;
+    let mut covered_secs = 0;
+
+    for segment in segments(samples, gap_secs) {
+        for pair in segment.windows(2) {
+            let seconds = pair[1].ts.saturating_sub(pair[0].ts);
+            let mean_watts = (pair[0].watts + pair[1].watts) / 2.0;
+            wh += mean_watts * seconds as f64 / 3600.0;
+            covered_secs += seconds;
+        }
+    }
+    Energy { wh, covered_secs }
+}
+
+#[cfg(test)]
+mod energy_tests {
+    use super::*;
+    use crate::history::GAP_SECS;
+    use crate::power::State;
+
+    fn sample(ts: u64, watts: f64) -> Sample {
+        Sample {
+            ts,
+            watts,
+            state: State::Discharging,
+        }
+    }
+
+    #[test]
+    fn integrates_power_over_time() {
+        // A flat 10 W held for an hour is 10 Wh.
+        let flat: Vec<Sample> = (0..=60).map(|m| sample(m * 60, 10.0)).collect();
+        let e = energy(&flat, GAP_SECS);
+        assert!((e.wh - 10.0).abs() < 1e-9, "expected 10 Wh, got {}", e.wh);
+        assert_eq!(e.covered_secs, 3600);
+    }
+
+    #[test]
+    fn treats_a_ramp_as_a_ramp() {
+        // 0 W rising steadily to 10 W over an hour averages 5 W, so 5 Wh — not 0, and not
+        // the 10 Wh a last-value-wins sum would give. Sampled every minute, because two
+        // readings an hour apart are a gap, not a ramp.
+        let ramp: Vec<Sample> = (0..=60)
+            .map(|m| sample(m * 60, 10.0 * m as f64 / 60.0))
+            .collect();
+        let e = energy(&ramp, GAP_SECS);
+        assert!((e.wh - 5.0).abs() < 1e-9, "expected 5 Wh, got {}", e.wh);
+        assert_eq!(e.covered_secs, 3600);
+    }
+
+    #[test]
+    fn counts_no_energy_across_a_gap() {
+        // Half an hour at 10 W, three hours absent, half an hour at 10 W: 10 Wh observed
+        // over one hour of evidence. Bridging the gap would invent about 30 Wh.
+        let mut samples: Vec<Sample> = (0..=30).map(|m| sample(m * 60, 10.0)).collect();
+        samples.extend((0..=30).map(|m| sample(11_000 + m * 60, 10.0)));
+
+        let e = energy(&samples, GAP_SECS);
+        assert!((e.wh - 10.0).abs() < 1e-9, "expected 10 Wh, got {}", e.wh);
+        assert_eq!(
+            e.covered_secs, 3600,
+            "only the sampled hour counts as covered"
+        );
+    }
+
+    #[test]
+    fn a_lone_reading_is_not_evidence_of_energy() {
+        let e = energy(&[sample(0, 10.0)], GAP_SECS);
+        assert_eq!(e.wh, 0.0);
+        assert_eq!(e.covered_secs, 0);
     }
 }

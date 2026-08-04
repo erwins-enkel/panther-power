@@ -8,7 +8,7 @@ use crate::cli::{Cli, RaplMode};
 use crate::history::{self, Sample};
 use crate::power::State;
 use crate::rapl::{Rapl, Unavailable};
-use crate::stats::Stats;
+use crate::stats::{Energy, Stats};
 
 /// Selectable spans of the chart's x-axis.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, ValueEnum)]
@@ -161,6 +161,11 @@ impl App {
         history::window(&self.cpu_series, self.window_start())
     }
 
+    /// The clock this frame is drawn against.
+    pub const fn now(&self) -> u64 {
+        self.now
+    }
+
     /// Unix second at the left edge of the chart.
     pub fn window_start(&self) -> u64 {
         self.now.saturating_sub(self.range.secs())
@@ -196,6 +201,11 @@ impl App {
     /// `Charging | Full` would blank the chart with "no samples" on every such machine.
     pub fn on_ac(&self) -> bool {
         self.latest().is_some_and(|s| s.state != State::Discharging)
+    }
+
+    /// Energy drawn from the pack across the visible window.
+    pub fn window_energy(&self) -> Energy {
+        crate::stats::energy(&self.visible_discharging(), history::GAP_SECS)
     }
 
     /// Summary over the visible window, discharge only.
