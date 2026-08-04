@@ -5,6 +5,15 @@
 A live terminal chart of laptop power draw, in braille. `btop`'s visual language, but for
 the one number `btop` doesn't graph: watts off the battery.
 
+![panther-power](docs/demo.gif)
+
+That is a real recording, not a mock-up. The blank stretch mid-chart is 21 minutes on
+mains: charging is not draw, so those samples are excluded rather than bridged with a
+plausible-looking line. See [How it measures](#how-it-measures).
+
+<details>
+<summary>Same thing as text, for reading in a terminal</summary>
+
 ```
 ┌ panther-power BAT1 discharging 90% ──────────────────────────────────────────────────┐
 │now 7.19 W   median 6.93 W   mean 7.65 W   p90 9.51 W                                 │
@@ -28,12 +37,11 @@ the one number `btop` doesn't graph: watts off the battery.
  1 15m   2 1h   3 3h   4 12h   q quit
 ```
 
-The fill runs green at idle to red at the peak, in [Catppuccin](https://catppuccin.com).
-Colour is lost in this README; it is the point of the thing in a real terminal.
+</details>
 
-That is a real capture, not a mock-up. The blank stretch in the middle is 21 minutes on
-mains: charging is not draw, so those samples are excluded rather than bridged with a
-plausible-looking line. See [How it measures](#how-it-measures).
+The fill runs green at idle to red at the peak, in [Catppuccin](https://catppuccin.com).
+
+Recorded with [vhs](https://github.com/charmbracelet/vhs): `vhs docs/demo.tape`.
 
 ## Install
 
