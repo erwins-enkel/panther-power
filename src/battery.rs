@@ -28,8 +28,12 @@ impl Battery {
         entries
             .into_iter()
             .find(|p| {
+                // The same counters `watts` needs: accepting a battery on `current_now`
+                // alone picks one that can never be sampled, and the header then shows a
+                // backfilled reading labelled "now" forever, with nothing to say why.
                 read_str(p, "type").as_deref() == Some("Battery")
-                    && (p.join("power_now").exists() || p.join("current_now").exists())
+                    && (p.join("power_now").exists()
+                        || (p.join("current_now").exists() && p.join("voltage_now").exists()))
             })
             .map(|root| Self {
                 name: root
