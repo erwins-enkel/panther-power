@@ -105,8 +105,11 @@ fn draw_header(frame: &mut Frame, area: Rect, app: &App) {
         .zip(stats.map(|s| s.median))
         .and_then(|(wh, median)| runtime_hours(wh, median))
         .map(fmt_hm);
+    // Endurance of a *full* pack, which is the benchmark figure — not time remaining at
+    // the current charge. Labelled so it cannot be read as the latter next to the
+    // percentage in the title.
     bottom.extend(stat(
-        "at median",
+        "full-pack at median",
         projection.unwrap_or_else(|| "—".to_owned()),
     ));
     bottom.push(Span::styled(
@@ -139,6 +142,10 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
             Style::default().fg(theme::dim()),
         ),
     ]);
+    // Read the clock once, before the window is taken: a second ticking over between the
+    // two would put `t0` after the cutoff the samples were filtered on, and the oldest
+    // reading would saturate to x = 0 and be drawn on the left edge.
+    let t0 = app.window_start();
     let visible = app.visible_discharging();
 
     if visible.is_empty() {
@@ -161,7 +168,6 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
 
     let y_max = nice_ceil(visible.iter().fold(0.0_f64, |m, s| m.max(s.watts)));
     let span = app.range.secs() as f64;
-    let t0 = app.window_start();
     let runs = band_data(&visible, y_max, t0);
 
     let outer = block(title);
@@ -172,11 +178,14 @@ fn draw_chart(frame: &mut Frame, area: Rect, app: &App) {
     let gutter = labels.iter().map(Line::width).max().unwrap_or(0) as u16 + 1;
     let [plot_row, x_axis_row] =
         Layout::vertical([Constraint::Min(1), Constraint::Length(1)]).areas(inner);
-    let [gutter_area, plot] =
-        Layout::horizontal([Constraint::Length(gutter), Constraint::Min(1)]).areas(plot_row);
+    let columns = Layout::horizontal([Constraint::Length(gutter), Constraint::Min(1)]);
+    let [gutter_area, plot] = columns.areas(plot_row);
+    // The tick row is inset by the same gutter, or every label sits `gutter` columns left
+    // of the moment it names.
+    let [_, x_axis] = columns.areas(x_axis_row);
 
     draw_y_axis(frame, gutter_area, &labels);
-    draw_x_axis(frame, x_axis_row, app.range);
+    draw_x_axis(frame, x_axis, app.range);
 
     // Every band is painted into a single canvas layer, deliberately: `Chart` puts each
     // dataset in its own layer, where a later layer's cell replaces the earlier one
@@ -243,12 +252,17 @@ fn draw_y_axis(frame: &mut Frame, area: Rect, labels: &[Line<'static>]) {
 }
 
 /// Row for tick `i` of `count`, counting down from the top of `area`.
+///
+/// Rounded, not truncated: the canvas rounds when it maps a value to a dot row, so a
+/// truncating tick puts the midpoint label a row above the height it labels whenever the
+/// plot is an even number of rows tall.
 fn tick_row(area: Rect, i: usize, count: usize) -> Option<u16> {
     if area.height == 0 {
         return None;
     }
     let span = u32::from(area.height - 1);
-    let offset = (span * i as u32) / (count.max(2) - 1) as u32;
+    let steps = (count.max(2) - 1) as u32;
+    let offset = (span * i as u32 + steps / 2) / steps;
     Some(area.y + offset as u16)
 }
 
@@ -285,11 +299,16 @@ const fn band_floor(band: usize, y_max: f64) -> f64 {
 ///
 /// Ordered from the top band down, because each band is painted all the way to the axis
 /// and so must be overpainted by every band below it.
+///
+/// Band is the outer loop, not segment: a cell carries one colour, so ordering by segment
+/// first would let a later segment's high band land on a cell an earlier segment's low
+/// band already owns, and colour it for a height it does not reach.
 fn band_data(visible: &[Sample], y_max: f64, t0: u64) -> Vec<(usize, Vec<(f64, f64)>)> {
+    let segments = segments(visible, GAP_SECS);
     let mut out = Vec::new();
-    for segment in segments(visible, GAP_SECS) {
-        for band in (0..BANDS).rev() {
-            let (lo, hi) = (band_floor(band, y_max), band_floor(band + 1, y_max));
+    for band in (0..BANDS).rev() {
+        let (lo, hi) = (band_floor(band, y_max), band_floor(band + 1, y_max));
+        for segment in &segments {
             out.extend(
                 band_runs(segment, lo, hi, t0)
                     .into_iter()
