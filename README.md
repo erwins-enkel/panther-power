@@ -1,5 +1,7 @@
 # panther-power
 
+[![CI](https://github.com/erwins-enkel/panther-power/actions/workflows/ci.yml/badge.svg)](https://github.com/erwins-enkel/panther-power/actions/workflows/ci.yml)
+
 A live terminal chart of laptop power draw, in braille. `btop`'s visual language, but for
 the one number `btop` doesn't graph: watts off the battery.
 
