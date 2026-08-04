@@ -110,12 +110,14 @@ impl App {
             .collect()
     }
 
-    /// Whether the machine is currently on AC, and so not being charted.
+    /// Whether the machine is currently off the battery, and so not being charted.
+    ///
+    /// Anything that is not an explicit discharge counts. Firmware with a charge threshold
+    /// reports `Not charging` while plugged in and holding at the limit — sysfs has no
+    /// dedicated word for it, so it arrives as [`State::Unknown`], and matching only on
+    /// `Charging | Full` would blank the chart with "no samples" on every such machine.
     pub fn on_ac(&self) -> bool {
-        matches!(
-            self.latest().map(|s| s.state),
-            Some(State::Charging | State::Full)
-        )
+        self.latest().is_some_and(|s| s.state != State::Discharging)
     }
 
     /// Summary over the visible window, discharge only.
