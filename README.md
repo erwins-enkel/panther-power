@@ -46,6 +46,7 @@ Recorded with [vhs](https://github.com/charmbracelet/vhs): `vhs docs/demo.tape`.
 ## Install
 
 Linux only — it reads `/sys/class/power_supply` and talks to UPower over D-Bus.
+Needs Rust 1.88 or newer, which CI compiles against on every push.
 
 ```sh
 cargo install --git https://github.com/erwins-enkel/panther-power
@@ -90,6 +91,7 @@ manager — `pacman -S just`, `brew install just`, `apt install just`.
 ```sh
 just         # list recipes
 just ci      # fmt, clippy (warnings are errors), tests, release build — what CI runs
+just msrv    # compile against the declared minimum Rust version
 just run     # build and launch
 just install # install this working copy to ~/.cargo/bin
 just demo    # re-record docs/demo.gif, needs vhs and ttyd

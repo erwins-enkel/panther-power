@@ -3,6 +3,9 @@
 # CI runs these same recipes, so what passes here is what passes there — the gate list
 # lives in one place rather than being duplicated into the workflow.
 
+# Read from Cargo.toml so the declared floor and the verified one cannot drift
+msrv_version := `grep -m1 '^rust-version' Cargo.toml | cut -d'"' -f2`
+
 # List the recipes
 default:
     @just --list
@@ -21,6 +24,14 @@ fmt-check:
 # Warnings are failures, so they can never accumulate
 lint:
     cargo clippy --all-targets -- -D warnings
+
+# Print the declared MSRV
+msrv_version:
+    @echo "{{msrv_version}}"
+
+# Compile against the declared MSRV (needs that toolchain via rustup)
+msrv:
+    cargo +{{msrv_version}} check --all-targets
 
 # Unit and rendering tests
 test:

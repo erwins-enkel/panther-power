@@ -2,6 +2,9 @@
 name = "panther-power"
 version = "0.1.0"
 edition = "2024"
+# Floor set by ratatui 1.88 and by let-chains, which this crate uses. Verified in CI
+# rather than asserted — see the `msrv` recipe.
+rust-version = "1.88"
 description = "Live terminal chart of laptop power draw, in braille"
 license = "MIT"
 repository = "https://github.com/erwins-enkel/panther-power"

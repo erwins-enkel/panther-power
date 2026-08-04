@@ -35,3 +35,20 @@ jobs:
       # The sysfs and D-Bus paths cannot run on a CI box with no battery, so this only
       # proves it builds for release, not that it works.
       - run: just build
+
+  # A declared MSRV nobody compiles against is a guess. This makes it a fact.
+  msrv:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: taiki-e/install-action@v2
+        with:
+          tool: just
+
+      - name: Install the declared MSRV toolchain
+        run: rustup toolchain install "$(just msrv_version)" --profile minimal
+
+      - uses: Swatinem/rust-cache@v2
+
+      - run: just msrv
