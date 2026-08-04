@@ -34,6 +34,14 @@ build:
 run: build
     ./target/release/panther-power
 
+# Install this working copy to ~/.cargo/bin (which may not be on your PATH)
+install:
+    cargo install --path .
+
+# Remove it again
+uninstall:
+    cargo uninstall panther-power
+
 # Recording needs vhs and ttyd, plus a battery with some discharge history: on a machine
 # that has been on mains all day the chart has nothing to draw.
 

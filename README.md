@@ -51,6 +51,10 @@ Linux only — it reads `/sys/class/power_supply` and talks to UPower over D-Bus
 cargo install --git https://github.com/erwins-enkel/panther-power
 ```
 
+That drops the binary in `~/.cargo/bin`, which is on your `PATH` if you installed Rust
+through rustup — but not if you installed it from a distro package. Check with
+`command -v panther-power`, and add it yourself if it comes back empty.
+
 Or from a clone:
 
 ```sh
@@ -79,12 +83,14 @@ panther-power --list-batteries      # what this machine exposes
 
 ## Development
 
-Needs [just](https://github.com/casey/just).
+Needs [just](https://github.com/casey/just): `cargo install just`, or from your package
+manager — `pacman -S just`, `brew install just`, `apt install just`.
 
 ```sh
 just         # list recipes
 just ci      # fmt, clippy (warnings are errors), tests, release build — what CI runs
 just run     # build and launch
+just install # install this working copy to ~/.cargo/bin
 just demo    # re-record docs/demo.gif, needs vhs and ttyd
 ```
 
