@@ -5,6 +5,7 @@ mod battery;
 mod chart;
 mod cli;
 mod history;
+mod json;
 mod power;
 mod rapl;
 mod stats;
@@ -35,6 +36,11 @@ fn main() -> Result<()> {
     );
 
     let mut app = App::new(&cli)?;
+
+    if cli.json {
+        return json::emit(&mut app, &cli);
+    }
+
     let mut terminal = ratatui::init();
     let result = run(&mut terminal, &mut app, &cli);
     ratatui::restore();

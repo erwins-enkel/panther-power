@@ -20,6 +20,11 @@ pub struct Cli {
     #[arg(long)]
     pub list_batteries: bool,
 
+    /// Print one JSON snapshot and exit, instead of drawing. Waits one interval when the
+    /// CPU panel is on, because its watts are a difference between two readings
+    #[arg(long)]
+    pub json: bool,
+
     /// Seconds between readings. Most embedded controllers only refresh about once a
     /// second, so anything faster repeats readings rather than resolving them
     #[arg(short, long, value_name = "SECS", default_value_t = 1.0)]

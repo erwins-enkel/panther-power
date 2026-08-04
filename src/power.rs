@@ -20,6 +20,16 @@ impl State {
         }
     }
 
+    /// One lowercase word, for display and for machine-readable output.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Charging => "charging",
+            Self::Discharging => "discharging",
+            Self::Full => "full",
+            Self::Unknown => "unknown",
+        }
+    }
+
     /// The words in `/sys/class/power_supply/*/status`.
     pub fn from_sysfs(status: &str) -> Self {
         match status.trim() {
