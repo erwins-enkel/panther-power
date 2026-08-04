@@ -59,6 +59,12 @@ pub struct App {
     pub pack_wh: Option<f64>,
     /// Set when backfill failed, so the empty chart is explained rather than silent.
     pub notice: Option<String>,
+    /// The clock, read once per tick rather than per call.
+    ///
+    /// Every read during a frame has to agree: a second turning over between the window
+    /// cutoff and the chart origin shifts the two against each other. Holding it also
+    /// makes a frame a pure function of this struct, so rendering can be tested.
+    now: u64,
 }
 
 impl App {
@@ -82,11 +88,28 @@ impl App {
             range: cli.range,
             pack_wh,
             notice,
+            now: now_unix(),
         })
+    }
+
+    /// Assemble directly, skipping discovery and backfill, with the clock pinned so a
+    /// frame is reproducible.
+    #[cfg(test)]
+    pub fn for_test(series: Vec<Sample>, now: u64, range: Range) -> Self {
+        Self {
+            battery: Battery::at("BAT0", "/nonexistent"),
+            marker: ratatui::symbols::Marker::Braille,
+            series,
+            range,
+            pack_wh: Some(73.5),
+            notice: None,
+            now,
+        }
     }
 
     /// Take one live reading.
     pub fn tick(&mut self) {
+        self.now = now_unix();
         if let Some(sample) = self.battery.sample() {
             history::push(&mut self.series, sample, RETAIN_SECS);
         }
@@ -94,7 +117,7 @@ impl App {
 
     /// Unix second at the left edge of the chart.
     pub fn window_start(&self) -> u64 {
-        now_unix().saturating_sub(self.range.secs())
+        self.now.saturating_sub(self.range.secs())
     }
 
     pub fn visible(&self) -> &[Sample] {

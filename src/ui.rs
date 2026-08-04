@@ -365,3 +365,116 @@ fn draw_footer(frame: &mut Frame, area: Rect, app: &App) {
 
     frame.render_widget(Paragraph::new(Line::from(spans)), area);
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::history::Sample;
+    use crate::power::State;
+    use ratatui::Terminal;
+    use ratatui::backend::TestBackend;
+
+    const NOW: u64 = 1_800_000_000;
+
+    fn sample(ts: u64, watts: f64, state: State) -> Sample {
+        Sample { ts, watts, state }
+    }
+
+    fn render(app: &App, width: u16, height: u16) -> ratatui::buffer::Buffer {
+        let mut terminal = Terminal::new(TestBackend::new(width, height)).expect("test backend");
+        terminal.draw(|frame| draw(frame, app)).expect("draw");
+        terminal.backend().buffer().clone()
+    }
+
+    fn row(buffer: &ratatui::buffer::Buffer, y: u16) -> String {
+        (0..buffer.area().width)
+            .filter_map(|x| buffer.cell((x, y)))
+            .map(|cell| cell.symbol())
+            .collect()
+    }
+
+    /// Which columns of the chart body have anything painted in them.
+    fn painted_columns(buffer: &ratatui::buffer::Buffer) -> Vec<bool> {
+        let area = *buffer.area();
+        // The chart block sits below the four-row header; skip its border and the tick row.
+        let rows = 6..area.height.saturating_sub(3);
+        (0..area.width)
+            .map(|x| {
+                rows.clone().any(|y| {
+                    buffer
+                        .cell((x, y))
+                        .is_some_and(|c| !c.symbol().trim().is_empty())
+                })
+            })
+            .collect()
+    }
+
+    #[test]
+    fn renders_a_gap_as_blank_columns() {
+        // An hour of draw, an hour asleep, an hour of draw — in a three-hour window.
+        let mut series = Vec::new();
+        for i in 0..120 {
+            series.push(sample(NOW - 10_800 + i * 30, 6.0, State::Discharging));
+        }
+        for i in 0..120 {
+            series.push(sample(NOW - 3_600 + i * 30, 6.0, State::Discharging));
+        }
+        let app = App::for_test(series, NOW, Range::H3);
+
+        let painted = painted_columns(&render(&app, 100, 24));
+        let width = painted.len();
+        let filled = |range: std::ops::Range<usize>| painted[range].iter().filter(|p| **p).count();
+
+        // Thirds of the plot: drawn, absent, drawn. The middle third must stay empty —
+        // interpolating across it would invent an hour of readings that never happened.
+        assert!(filled(10..width / 3) > 10, "the first hour should be drawn");
+        assert_eq!(
+            filled(width / 2 - 8..width / 2 + 8),
+            0,
+            "the sleeping hour must be blank, not bridged"
+        );
+        assert!(
+            filled(width * 3 / 4..width - 2) > 10,
+            "the last hour should be drawn"
+        );
+    }
+
+    #[test]
+    fn explains_an_empty_window_rather_than_drawing_nothing() {
+        let app = App::for_test(vec![sample(NOW - 5, 40.0, State::Charging)], NOW, Range::H1);
+        let buffer = render(&app, 90, 20);
+        let text: String = (0..buffer.area().height)
+            .map(|y| row(&buffer, y))
+            .collect::<Vec<_>>()
+            .join("\n");
+
+        assert!(
+            text.contains("on AC"),
+            "an AC window needs a reason, got:\n{text}"
+        );
+        assert!(
+            text.contains("charging at"),
+            "the live figure is charge rate, not draw"
+        );
+    }
+
+    #[test]
+    fn stat_row_survives_a_narrow_terminal() {
+        let series = (0..60)
+            .map(|i| sample(NOW - 3_600 + i * 60, 6.0, State::Discharging))
+            .collect();
+        let buffer = render(&App::for_test(series, NOW, Range::H1), 88, 20);
+
+        // The last stat on each row is the one a truncating layout drops first.
+        assert!(
+            row(&buffer, 1).contains("p90"),
+            "row 1: {}",
+            row(&buffer, 1)
+        );
+        assert!(
+            row(&buffer, 2).contains("full-pack at median"),
+            "row 2: {}",
+            row(&buffer, 2)
+        );
+    }
+}

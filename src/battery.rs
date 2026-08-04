@@ -79,6 +79,18 @@ impl Battery {
         }
     }
 
+    /// A battery rooted at a given sysfs directory.
+    ///
+    /// Every reader below tolerates a missing file, so a root that does not exist yields a
+    /// battery that reports nothing — which is what a render test wants.
+    #[cfg(test)]
+    pub fn at(name: impl Into<String>, root: impl Into<PathBuf>) -> Self {
+        Self {
+            name: name.into(),
+            root: root.into(),
+        }
+    }
+
     pub fn state(&self) -> State {
         read_str(&self.root, "status")
             .map(|s| State::from_sysfs(&s))
