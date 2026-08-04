@@ -77,6 +77,16 @@ panther-power --list-batteries      # what this machine exposes
 | `--marker <braille\|half-block\|block\|dot>` | `braille` | Braille needs a font with the Braille Patterns block |
 | `--color <auto\|truecolor\|ansi>` | `auto` | `auto` reads `COLORTERM`; `ansi` follows your terminal's own palette |
 
+## Development
+
+```sh
+make ci      # fmt, clippy (warnings are errors), tests, release build — what CI runs
+make run     # build and launch
+make demo    # re-record docs/demo.gif, needs vhs and ttyd
+```
+
+CI invokes the same Makefile targets, so a green `make ci` locally means a green pipeline.
+
 ## How it measures
 
 Most of the work here is in *not* lying about the data.

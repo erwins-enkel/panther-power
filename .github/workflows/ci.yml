@@ -19,13 +19,14 @@ jobs:
 
       - uses: Swatinem/rust-cache@v2
 
-      - run: cargo fmt --all --check
+      # Each gate is a separate step so a failure is obvious in the UI, but the commands
+      # themselves live in the Makefile — `make ci` locally runs exactly this list.
+      - run: make fmt-check
 
-      # Warnings are failures here; the point of the gate is that they never accumulate.
-      - run: cargo clippy --all-targets -- -D warnings
+      - run: make lint
 
-      - run: cargo test --all-targets
+      - run: make test
 
       # The sysfs and D-Bus paths cannot run on a CI box with no battery, so this only
       # proves it builds for release, not that it works.
-      - run: cargo build --release
+      - run: make build
